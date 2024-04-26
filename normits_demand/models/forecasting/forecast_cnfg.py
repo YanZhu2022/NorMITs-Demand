@@ -1,4 +1,5 @@
 """Config files and options for `run_forecast`."""
+
 import enum
 import os
 from pathlib import Path
@@ -89,9 +90,7 @@ class ForecastParameters(caf.toolkit.BaseConfig):
         }
         for nm, p in paths.items():
             if not p.is_dir():
-                raise NotADirectoryError(
-                    f"cannot find {nm} folder: {p}"
-                )
+                raise NotADirectoryError(f"cannot find {nm} folder: {p}")
         return paths
 
     @property
@@ -99,14 +98,9 @@ class ForecastParameters(caf.toolkit.BaseConfig):
         """Path
         Path to the vehicle occupancies CSV file.
         """
-        path = (
-            self.import_path
-            / "vehicle_occupancies/car_vehicle_occupancies.csv"
-        )
+        path = self.import_path / "vehicle_occupancies/car_vehicle_occupancies.csv"
         if not path.exists():
-            raise FileNotFoundError(
-                f"cannot find vehicle occupancies CSV: {path}"
-            )
+            raise FileNotFoundError(f"cannot find vehicle occupancies CSV: {path}")
         return path
 
 
@@ -120,9 +114,7 @@ class TEMForecastParameters(ForecastParameters):
     forecasting_model_name: str
 
     @staticmethod
-    def _build_tripend_path(
-        base: Path, tripend_iteration: str, scenario: nd.Scenario
-    ) -> Path:
+    def _build_tripend_path(base: Path, tripend_iteration: str, scenario: nd.Scenario) -> Path:
         return base / f"iter{tripend_iteration}/{scenario.value}"
 
     @pydantic.root_validator(skip_on_failure=True)
@@ -178,17 +170,9 @@ class NTEMDataParameters(pydantic.BaseModel):
     def _check_scenario(  # pylint: disable=no-self-argument
         cls, value: Optional[str]
     ) -> Optional[str]:
-        if (
-            value is not None
-            and value not in ntem_extractor.TemproParser._scenario_list
-        ):
-            scenarios = ", ".join(
-                f"'{s}'"
-                for s in ntem_extractor.TemproParser._scenario_list
-            )
-            raise ValueError(
-                f"scenario should be one of {scenarios}, not '{value}'"
-            )
+        if value is not None and value not in ntem_extractor.TemproParser._scenario_list:
+            scenarios = ", ".join(f"'{s}'" for s in ntem_extractor.TemproParser._scenario_list)
+            raise ValueError(f"scenario should be one of {scenarios}, not '{value}'")
 
         return value
 
@@ -196,13 +180,8 @@ class NTEMDataParameters(pydantic.BaseModel):
     def _check_version_and_scenario(  # pylint: disable=no-self-argument
         cls, values: dict[str, Any]
     ) -> dict[str, Any]:
-        if (
-            values["version"] > 7.2
-            and values.get("scenario", None) is None
-        ):
-            raise ValueError(
-                "scenario required for NTEM versions > 7.2"
-            )
+        if values["version"] > 7.2 and values.get("scenario", None) is None:
+            raise ValueError("scenario required for NTEM versions > 7.2")
 
         return values
 
@@ -226,9 +205,7 @@ class NTEMForecastParameters(ForecastParameters):
         else:
             raise ValueError("expected scenario for NTEM version > 7.2")
 
-        return self._build_export_path(
-            "NTEM", str(self.ntem_parameters.version), scenario
-        )
+        return self._build_export_path("NTEM", str(self.ntem_parameters.version), scenario)
 
 
 class TicketSplitParams(caf.toolkit.BaseConfig):
@@ -253,16 +230,20 @@ class TicketSplitParams(caf.toolkit.BaseConfig):
     flow_cat_path: Path
     splits_path: Path
     info: Optional[str]
-    
+
     @pydantic.validator("splits_path")
     def _check_contents(cls, value):
         files = os.listdir(value)
         if "TicketTypeSplits.csv" not in files:
-            raise ValueError("splits_path must contain a file called TicketTypeSplits.csv, containing ticket type split data.")
+            raise ValueError(
+                "splits_path must contain a file called TicketTypeSplits.csv, containing ticket type split data."
+            )
         for i in files:
-            if '_stn2stn_costs.csv' in i:
+            if "_stn2stn_costs.csv" in i:
                 return value
-        raise ValueError("splits_path must contain files called {tp}_stn2stn_costs.csv, where tp are time periods (usually 'AM', 'IP', 'PM', 'OP')")
+        raise ValueError(
+            "splits_path must contain files called {tp}_stn2stn_costs.csv, where tp are time periods (usually 'AM', 'IP', 'PM', 'OP')"
+        )
 
 
 class EDGEParameters(caf.toolkit.BaseConfig):
@@ -320,7 +301,7 @@ class EDGEParameters(caf.toolkit.BaseConfig):
     @classmethod
     @pydantic.validator(
         "demand_segments",
-        "flow_cat_path",
+        # "flow_cat_path",
         "ticket_type_splits_path",
         "norms_to_edge_stns_path",
         "edge_flows_path",
@@ -338,9 +319,7 @@ class EDGEParameters(caf.toolkit.BaseConfig):
         """Check the factors Path."""
         path: Path = values["edge_growth_dir"]
         if not path.is_dir():
-            raise ValueError(
-                f"EDGE factors folder doesn't exist: {path}"
-            )
+            raise ValueError(f"EDGE factors folder doesn't exist: {path}")
 
         return values
 
@@ -350,13 +329,11 @@ class EDGEParameters(caf.toolkit.BaseConfig):
     ) -> dict[str, Any]:
         """Check the factors file."""
         for forecast_year in values["forecast_years"]:
-            path: Path = Path(values["edge_growth_dir"]) / values[
-                "forecast_years"
-            ][forecast_year].format(**values)
+            path: Path = Path(values["edge_growth_dir"]) / values["forecast_years"][
+                forecast_year
+            ].format(**values)
             if not path.is_file():
-                raise ValueError(
-                    f"EDGE factors file doesn't exist: {path}"
-                )
+                raise ValueError(f"EDGE factors file doesn't exist: {path}")
 
         return values
 

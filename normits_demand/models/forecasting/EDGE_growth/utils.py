@@ -11,20 +11,21 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 from caf.toolkit import pandas_utils
+
 # Local Imports
 # pylint: disable=import-error,wrong-import-position
 # Local imports here
 from normits_demand.matrices.cube_mat_converter import CUBEMatConverter
+
 # pylint: enable=import-error,wrong-import-position
 
 # # # CONSTANTS # # #
 
 # # # CLASSES # # #
 
+
 # # # FUNCTIONS # # #
-def transpose_matrix(
-    mx_df: pd.DataFrame, stations: bool = False
-) -> pd.DataFrame:
+def transpose_matrix(mx_df: pd.DataFrame, stations: bool = False) -> pd.DataFrame:
     """Transpose a matrix O<>D/P<>A.
 
     Parameters
@@ -82,15 +83,11 @@ def expand_matrix(
         od_cols = ["from_stn_zone_id", "to_stn_zone_id"]
     # create empty dataframe
     expanded_mx = pd.DataFrame(
-        list(
-            itertools.product(range(1, zones + 1), range(1, zones + 1))
-        ),
+        list(itertools.product(range(1, zones + 1), range(1, zones + 1))),
         columns=od_cols,
     )
     # get first matrix
-    expanded_mx = expanded_mx.merge(
-        mx_df, how="outer", on=od_cols
-    ).fillna(0)
+    expanded_mx = expanded_mx.merge(mx_df, how="outer", on=od_cols).fillna(0)
     return expanded_mx
 
 
@@ -101,13 +98,18 @@ def filter_stations(stations_lookup, df):
     """
     used_stations = stations_lookup["STATIONCODE"].to_list()
     df = df.loc[
-        (df["ZoneCodeFrom"].isin(used_stations))
-        & (df["ZoneCodeTo"].isin(used_stations))
+        (df["ZoneCodeFrom"].isin(used_stations)) & (df["ZoneCodeTo"].isin(used_stations))
     ]
     return df
 
 
-def merge_to_stations(stations_lookup: pd.DataFrame, df: pd.DataFrame, left_from: str, left_to: str, right: str = 'STATIONCODE'):
+def merge_to_stations(
+    stations_lookup: pd.DataFrame,
+    df: pd.DataFrame,
+    left_from: str,
+    left_to: str,
+    right: str = "STATIONCODE",
+):
     """
     Merge dataframe to stations lookup with the processing that goes with this.
 
@@ -122,7 +124,7 @@ def merge_to_stations(stations_lookup: pd.DataFrame, df: pd.DataFrame, left_from
         The name of the 'from' column df
     left_to: str
         The name of the 'to' column in df
-    
+
     Returns
     -------
 
@@ -135,9 +137,7 @@ def merge_to_stations(stations_lookup: pd.DataFrame, df: pd.DataFrame, left_from
         right_on=[right],
     )
     # rename
-    factors_df = factors_df.rename(
-        columns={"stn_zone_id": "from_stn_zone_id"}
-    )
+    factors_df = factors_df.rename(columns={"stn_zone_id": "from_stn_zone_id"})
     # merge on destination/attraction
     factors_df = factors_df.merge(
         stations_lookup,
@@ -181,9 +181,7 @@ def convert_csv_2_mat(
     mats_dict = {}
     # create a dictionary of matrices and their paths
     for segment in norms_segments:
-        mats_dict[segment] = pathlib.Path(
-            output_folder, f"{fcast_year}_24Hr_{segment}.csv"
-        )
+        mats_dict[segment] = pathlib.Path(output_folder, f"{fcast_year}_24Hr_{segment}.csv")
 
     # call CUBE convertor class
     c_m = CUBEMatConverter(cube_exe)
@@ -200,7 +198,7 @@ def zonal_from_to_stations_demand(
     irsj_props: pd.DataFrame,
     stations_count: int,
     userclass: int,
-    time_period
+    time_period,
 ) -> Tuple[np.ndarray, pd.DataFrame]:
     """Create a stn2stn matrix and produce a two way conversion lookup (zonal <> stations).
 
@@ -245,14 +243,10 @@ def zonal_from_to_stations_demand(
 
     # sum stn2stn demand
     stn2stn_mx = (
-        mx_df.groupby(["from_stn_zone_id", "to_stn_zone_id"])["Demand"]
-        .sum()
-        .reset_index()
+        mx_df.groupby(["from_stn_zone_id", "to_stn_zone_id"])["Demand"].sum().reset_index()
     )
     # rename column
-    stn2stn_mx = stn2stn_mx.rename(
-        columns={"Demand": "stn2stn_total_demand"}
-    )
+    stn2stn_mx = stn2stn_mx.rename(columns={"Demand": "stn2stn_total_demand"})
 
     # join the stn2stn demand total to the main matrix
     mx_df = mx_df.merge(
@@ -261,9 +255,7 @@ def zonal_from_to_stations_demand(
         on=["from_stn_zone_id", "to_stn_zone_id"],
     )
     # calculate stn 2 zone proportions
-    mx_df.loc[:, "stn_to_zone"] = (
-        mx_df["Demand"] / mx_df["stn2stn_total_demand"]
-    )
+    mx_df.loc[:, "stn_to_zone"] = mx_df["Demand"] / mx_df["stn2stn_total_demand"]
 
     # create lookup dataframe
     zonal_from_to_stns = mx_df[
@@ -281,15 +273,10 @@ def zonal_from_to_stations_demand(
     # expand matrix
     mx_df = expand_matrix(mx_df, zones=stations_count, stations=True)
     # group by stations
-    mx_df = (
-        mx_df.groupby(["from_stn_zone_id", "to_stn_zone_id"])["Demand"]
-        .sum()
-        .reset_index()
-    )
+    mx_df = mx_df.groupby(["from_stn_zone_id", "to_stn_zone_id"])["Demand"].sum().reset_index()
     # remove no-record stations
     mx_df = mx_df.loc[
-        (mx_df["from_stn_zone_id"] != 0)
-        & (mx_df["to_stn_zone_id"] != 0)
+        (mx_df["from_stn_zone_id"] != 0) & (mx_df["to_stn_zone_id"] != 0)
     ].reset_index(drop=True)
 
     # fill na
@@ -299,18 +286,16 @@ def zonal_from_to_stations_demand(
     # convert to long matrix
     cols = mx_df.columns
     np_mx = pandas_utils.long_to_wide_infill(
-                    df=mx_df,
-                    index_col=cols[0],
-                    columns_col=cols[1],
-                    values_col=cols[2],
-
-                    infill=0
-                ).values
+        df=mx_df, index_col=cols[0], columns_col=cols[1], values_col=cols[2], infill=0
+    ).values
     missing_props_demand = missing_props.Demand.sum() / mx_df.Demand.sum()
     if missing_props_demand > 0.01:
-        raise ValueError(f"{missing_props_demand * 100}% of demand does not have irsj prop values for UC{userclass}, tp{time_period}. Stopping process.")
+        raise ValueError(
+            f"{missing_props_demand * 100}% of demand does not have irsj prop values for UC{userclass}, tp{time_period}. Stopping process."
+        )
     else:
         return np_mx, zonal_from_to_stns
+
 
 def convert_stns_to_zonal_demand(
     np_stns_mx: np.ndarray,
@@ -338,7 +323,9 @@ def convert_stns_to_zonal_demand(
     """
     # convert wide stns matrix to long stns matrix
 
-    stns_mx = wide_to_long_np(np_stns_mx, cols=["from_stn_zone_id", "to_stn_zone_id", "Demand"])
+    stns_mx = wide_to_long_np(
+        np_stns_mx, cols=["from_stn_zone_id", "to_stn_zone_id", "Demand"]
+    )
     # join stns matrix to conversion lookup
     if to_home:
         zonal_mx = zones_2_stns_lookup.merge(
@@ -354,47 +341,61 @@ def convert_stns_to_zonal_demand(
             on=["from_stn_zone_id", "to_stn_zone_id"],
         )
     # calculate zonal demand
-    zonal_mx["ZonalDemand"] = (
-        zonal_mx["Demand"] * zonal_mx["stn_to_zone"]
-    )
+    zonal_mx["ZonalDemand"] = zonal_mx["Demand"] * zonal_mx["stn_to_zone"]
     # group to zonal level
     zonal_mx = (
-        zonal_mx.groupby(["from_model_zone_id", "to_model_zone_id"])[
-            "ZonalDemand"
-        ]
+        zonal_mx.groupby(["from_model_zone_id", "to_model_zone_id"])["ZonalDemand"]
         .sum()
         .reset_index()
     )
     # rename
-    zonal_mx = zonal_mx.rename(
-        columns={"ZonalDemand": f"{time_period}_Demand"}
-    )
+    zonal_mx = zonal_mx.rename(columns={"ZonalDemand": f"{time_period}_Demand"})
     cols = zonal_mx.columns
     # convert back to wide numpy matrix
-    zonal_mx = pandas_utils.long_to_wide_infill(zonal_mx, cols[0], cols[1], cols[2], infill=0).values
+    zonal_mx = pandas_utils.long_to_wide_infill(
+        zonal_mx, cols[0], cols[1], cols[2], infill=0
+    ).values
 
     return zonal_mx
 
-def split_irsj(irsj_dir: pathlib.Path, split_col: str, tp: str):
+
+def split_irsj(ixrsyj_dir: pathlib.Path, split_col: str, tp: str):
     """
     Splits an irsj prop files into separate files by userclass. Cycles through tps.
     Args:
-        irsj_dir (pathlib.Path): Dir the prop files are saved in
+        ixrsyj_dir (pathlib.Path): Dir the prop files are saved in
         split_col (str): The column to split by (designed to be userclass)
         tps (list[str]): List of tps to read in for.
     """
-    hdf_path = irsj_dir / f"{tp}_iRSj_probabilities.h5"
-    df = pd.read_hdf(hdf_path)
+    prq_path = ixrsyj_dir / f"{tp}_ixRSyj.PRQ"
+    df = pd.read_parquet(prq_path)
+    # group to iRSj level
+    df = (
+        df.groupby(
+            [
+                "from_model_zone_id",
+                "from_stn_zone_id",
+                "to_stn_zone_id",
+                "to_model_zone_id",
+                "userclass",
+            ]
+        )
+        .sum()
+        .reset_index()
+    )
     group = df.groupby(split_col)
     dfs = [group.get_group(i) for i in group.groups]
-    write_path = irsj_dir / f"{tp}_iRSj_probabilities_split.h5"
-    with pd.HDFStore(write_path, mode='w') as store:
+    write_path = ixrsyj_dir / f"{tp}_iRSj_probabilities_split.h5"
+    with pd.HDFStore(write_path, mode="w") as store:
         for df in dfs:
             # Save each split DataFrame as a separate key in the HDF5 store
-            key = f'{split_col}_{df[split_col].unique()[0]}'
+            key = f"{split_col}_{df[split_col].unique()[0]}"
             store[key] = df
 
-def wide_to_long_np(mx: np.array, cols: list[str] = ["from_model_zone_id","to_model_zone_id","Demand"]):
+
+def wide_to_long_np(
+    mx: np.array, cols: list[str] = ["from_model_zone_id", "to_model_zone_id", "Demand"]
+):
     """
     Wrapper around toolkit wide_to_long function to work on numpy array. Will add functionality to the base function
     soon.

@@ -19,6 +19,7 @@ from normits_demand import logging as nd_log
 ##### CONSTANTS #####
 LOG = nd_log.get_logger(__name__)
 
+
 ##### CLASSES #####
 class OMXFile(tables.File):
     """Reading and writing data to OMX files, which use the HDF5 format.

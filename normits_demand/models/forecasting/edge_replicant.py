@@ -40,32 +40,22 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
 
     # read global input files
     demand_segments = file_ops.read_df(params.demand_segments)
-    demand_segments.loc[:, "ToHome"] = demand_segments["ToHome"].astype(
-        bool
-    )
-    model_stations_tlcs = file_ops.read_df(
-        params.norms_to_edge_stns_path
-    )
+    demand_segments.loc[:, "ToHome"] = demand_segments["ToHome"].astype(bool)
+    model_stations_tlcs = file_ops.read_df(params.norms_to_edge_stns_path)
     ticket_splits_df = file_ops.read_df(params.ticket_type_splits_path)
     flow_cats = file_ops.read_df(params.flow_cat_path)
-    edge_flows = file_ops.read_df(
-        params.edge_flows_path, usecols=[0, 2, 5]
-    )
+    edge_flows = file_ops.read_df(params.edge_flows_path, usecols=[0, 2, 5])
     # declare journey purposes
     purposes = demand_segments["Purpose"].drop_duplicates().to_list()
 
     # demand segment list groups
     # NoRMS demand segments
     norms_segments = (
-        demand_segments.loc[demand_segments["ModelSegment"] == 1][
-            ["Segment"]
-        ]
+        demand_segments.loc[demand_segments["ModelSegment"] == 1][["Segment"]]
         .drop_duplicates()
         .values.tolist()
     )
-    norms_segments = [
-        segment for sublist in norms_segments for segment in sublist
-    ]
+    norms_segments = [segment for sublist in norms_segments for segment in sublist]
     # all segments
     all_segments = demand_segments["Segment"].to_list()
 
@@ -78,8 +68,7 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
         )
         # read input files
         growth_factors = file_ops.read_df(
-            params.edge_growth_dir
-            / params.forecast_years[forecast_year]
+            params.edge_growth_dir / params.forecast_years[forecast_year]
         )
         # produce growth matrices
         growth_matrices = prepare_growth_matrices(
@@ -123,13 +112,11 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
             factored_matrices[time_period] = {}
             # read time period specific files
             irsj_props = pd.read_hdf(
-                params.matrices_to_grow_dir
-                / f"{time_period}_iRSj_probabilities.h5",
+                params.matrices_to_grow_dir / f"{time_period}_iRSj_probabilities.h5",
                 key="iRSj",
             )
             dist_mx = pd.read_csv(
-                params.matrices_to_grow_dir
-                / f"{time_period}_stn2stn_costs.csv",
+                params.matrices_to_grow_dir / f"{time_period}_stn2stn_costs.csv",
                 usecols=[0, 1, 4],
             )
             # produce ticket type splitting matrices
@@ -175,13 +162,10 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
                 # check if matrix has no demand then continue
                 if zonal_base_demand_mx["Demand"].sum() == 0:
                     # keep matrix as it is, i.e. = 0
-                    factored_matrices[time_period][
-                        segment
-                    ] = long_mx_2_wide_mx(zonal_base_demand_mx)
-                    LOG.info(
-                        f"{time_period:>12}{segment:>15}"
-                        f"{0:>12}{0:>12}"
+                    factored_matrices[time_period][segment] = long_mx_2_wide_mx(
+                        zonal_base_demand_mx
                     )
+                    LOG.info(f"{time_period:>12}{segment:>15}" f"{0:>12}{0:>12}")
                     continue
                 # reduce probabilities to current userclass
                 irsj_probs_segment = irsj_props.loc[
@@ -199,13 +183,9 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
                     to_home,
                 )
                 # store matrix total demand
-                tot_input_demand = round(
-                    np_stn2stn_base_demand_mx.sum()
-                )
+                tot_input_demand = round(np_stn2stn_base_demand_mx.sum())
                 # add to overall base demand
-                overall_base_demand = (
-                    overall_base_demand + tot_input_demand
-                )
+                overall_base_demand = overall_base_demand + tot_input_demand
                 # apply growth
                 np_stn2stn_grown_demand_mx = apply_demand_growth(
                     np_stn2stn_base_demand_mx,
@@ -218,17 +198,12 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
                 )
                 # get movements where no growth has been applied
                 no_growth_movements = np_stn2stn_base_demand_mx[
-                    np_stn2stn_base_demand_mx
-                    == np_stn2stn_grown_demand_mx
+                    np_stn2stn_base_demand_mx == np_stn2stn_grown_demand_mx
                 ]
                 # Add to the total not grown demand
-                overall_not_grown_demand = (
-                    overall_not_grown_demand + no_growth_movements.sum()
-                )
+                overall_not_grown_demand = overall_not_grown_demand + no_growth_movements.sum()
                 # store matrix total demand
-                tot_output_demand = round(
-                    np_stn2stn_grown_demand_mx.sum()
-                )
+                tot_output_demand = round(np_stn2stn_grown_demand_mx.sum())
                 LOG.info(
                     f"{time_period:>12}{segment:>15}"
                     f"{tot_input_demand:>12}{tot_output_demand:>12}"
@@ -243,9 +218,7 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
                         f"{forecast_year}_Demand": [tot_output_demand],
                     }
                 )
-                growth_summary = pd.concat(
-                    [growth_summary, segment_growth_summary], axis=0
-                )
+                growth_summary = pd.concat([growth_summary, segment_growth_summary], axis=0)
                 # convert back to zonal level demand
                 zonal_grown_demand_mx = convert_stns_to_zonal_demand(
                     np_stn2stn_grown_demand_mx,
@@ -254,13 +227,9 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
                     to_home,
                 )
                 # add to grown matrices dictionary
-                factored_matrices[time_period][
-                    segment
-                ] = zonal_grown_demand_mx
+                factored_matrices[time_period][segment] = zonal_grown_demand_mx
         # calculate proportion of not grown demand
-        not_grown_demand_pcent = (
-            overall_not_grown_demand / overall_base_demand
-        )
+        not_grown_demand_pcent = overall_not_grown_demand / overall_base_demand
         # if proportion is greater than 1%, terminate the program
         if not_grown_demand_pcent > 0.01:
             LOG.critical(
@@ -300,11 +269,8 @@ def run_edge_growth(params: forecast_cnfg.EDGEParameters) -> None:
                     norms_matrices[segment],
                     rows="from_model_zone_id",
                     cols="to_model_zone_id",
-                ).sort_values(
-                    by=["from_model_zone_id", "to_model_zone_id"]
-                ),
-                params.export_path
-                / f"{forecast_year}_24Hr_{segment}.csv",
+                ).sort_values(by=["from_model_zone_id", "to_model_zone_id"]),
+                params.export_path / f"{forecast_year}_24Hr_{segment}.csv",
                 index=False,
             )
         # convert to Cube .MAT

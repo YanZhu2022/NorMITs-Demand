@@ -1,5 +1,5 @@
 import numpy as np
-from normits_demand.models.forecasting.edge_growth import utils
+from normits_demand.models.forecasting.EDGE_growth import utils
 import pandas as pd
 import caf.toolkit as ctk
 
@@ -43,9 +43,7 @@ def apply_demand_growth(
     stn2stn_forecast_mx = np.empty(shape=[matrix_zones, matrix_zones])
     # split matrix to ticket types and apply growth
     for ticketype, mx in splitting_matrices.items():
-        ticketype_np_matrix = (
-            stn2stn_base_mx * mx
-        )
+        ticketype_np_matrix = stn2stn_base_mx * mx
         # transpose ToHome demand
         if to_home:
             ticketype_np_matrix = ticketype_np_matrix.transpose()
@@ -98,13 +96,10 @@ def fromto_2_from_by_averaging(
     # loop over all norms segments
     for segment in norms_segments:
         # check if the segment has a ToHome component or if it's a non-home based
-        if (segment + "_T" in all_segments) and (
-            segment[:3].lower() != "nhb"
-        ):
+        if (segment + "_T" in all_segments) and (segment[:3].lower() != "nhb"):
             # average the FromHome and the transposition of the toHome
             matrices[segment] = (
-                matrices_dict[segment]
-                + matrices_dict[segment + "_T"].transpose()
+                matrices_dict[segment] + matrices_dict[segment + "_T"].transpose()
             ) / 2
 
         else:

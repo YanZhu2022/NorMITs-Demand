@@ -16,14 +16,16 @@ from caf.toolkit import pandas_utils
 # Local Imports
 # pylint: disable=import-error,wrong-import-position
 # Local imports here
-from normits_demand.models.forecasting.edge_growth import utils
+from normits_demand.models.forecasting.EDGE_growth import utils
 from normits_demand.models.forecasting import forecast_cnfg
 from normits_demand.utils import file_ops
+
 # pylint: enable=import-error,wrong-import-position
 
 # # # CONSTANTS # # #
 
 # # # CLASSES # # #
+
 
 # # # FUNCTIONS # # #
 def append_dist(row):
@@ -44,11 +46,12 @@ def append_dist(row):
         return row["TAG_NonDist"].lower() + " <25 miles"
     elif row["Distance"] < 100:
         return row["TAG_NonDist"].lower() + " 25 to 100 miles"
-    elif row['TAG_NonDist'].lower().endswith('london'):
+    elif row["TAG_NonDist"].lower().endswith("london"):
         return row["TAG_NonDist"].lower() + " 100 + miles"
     else:
-        return row['TAG_NonDist'].lower() + " 100 + miles - adjusted"
-    
+        return row["TAG_NonDist"].lower() + " 100 + miles - adjusted"
+
+
 def add_distance_band_tag_flow(mx_df: pd.DataFrame) -> pd.DataFrame:
     """Add TAGs distance band based on distance.
 
@@ -122,22 +125,14 @@ def produce_ticketype_splitting_matrices(
         numpy ticket type splitting matrices for all purposes and ticket types
     """
     # normalize flows
-    edge_flows.loc[:, "FlowCatName"] = edge_flows[
-        "FlowCatName"
+    edge_flows.loc[:, "FlowCatName"] = edge_flows["FlowCatName"].str.lower()
+    flows_lookup.loc[:, "FlowCatName"] = flows_lookup["FlowCatName"].str.lower()
+    flows_lookup.loc[:, "TAG_NonDist"] = flows_lookup["TAG_NonDist"].str.lower()
+    ticket_split_proportions.loc[:, "TAG_Flow"] = ticket_split_proportions[
+        "TAG_Flow"
     ].str.lower()
-    flows_lookup.loc[:, "FlowCatName"] = flows_lookup[
-        "FlowCatName"
-    ].str.lower()
-    flows_lookup.loc[:, "TAG_NonDist"] = flows_lookup[
-        "TAG_NonDist"
-    ].str.lower()
-    ticket_split_proportions.loc[
-        :, "TAG_Flow"
-    ] = ticket_split_proportions["TAG_Flow"].str.lower()
     # add flows TAG category
-    edge_flows = edge_flows.merge(
-        flows_lookup, how="left", on=["FlowCatName"]
-    )
+    edge_flows = edge_flows.merge(flows_lookup, how="left", on=["FlowCatName"])
     edge_flows = utils.merge_to_stations(
         stations_lookup, edge_flows, "FromCaseZoneID", "ToCaseZoneID"
     )
@@ -159,9 +154,7 @@ def produce_ticketype_splitting_matrices(
         on=["from_stn_zone_id", "to_stn_zone_id"],
     )
     # rename
-    edge_flows = edge_flows.rename(
-        columns={"tran_distance": "Distance"}
-    )
+    edge_flows = edge_flows.rename(columns={"Dist_R": "Distance"})
     # fill na
     edge_flows = edge_flows.fillna(0)
     # allocate distance bands
@@ -178,9 +171,7 @@ def produce_ticketype_splitting_matrices(
         ]
     ]
     # merge ticket split factors
-    edge_flows = edge_flows.merge(
-        ticket_split_proportions, how="left", on=["TAG_Flow"]
-    )
+    edge_flows = edge_flows.merge(ticket_split_proportions, how="left", on=["TAG_Flow"])
     # get list of purposes
     purposes = edge_flows["Purpose"].dropna().unique()
     # create matrices dictionary
@@ -190,27 +181,25 @@ def produce_ticketype_splitting_matrices(
         inner_dic = {}
         for ticketype in ["F", "R", "S"]:
             # get current purpose
-            mx_df = edge_flows.loc[
-                edge_flows["Purpose"] == purpose
-            ].reset_index(drop=True)
+            mx_df = edge_flows.loc[edge_flows["Purpose"] == purpose].reset_index(drop=True)
             # keep needed columns
-            mx_df = mx_df[
-                ["from_stn_zone_id", "to_stn_zone_id", ticketype]
-            ]
+            mx_df = mx_df[["from_stn_zone_id", "to_stn_zone_id", ticketype]]
             # rename
             mx_df = mx_df.rename(columns={ticketype: "Demand"})
             # expand matrix
             index = range(1, len(stations_lookup) + 1)
             # convert to numpy and add to matrices dictionary
-            inner_dic[ticketype] = pandas_utils.long_to_wide_infill(mx_df, mx_df.columns[0], mx_df.columns[1], mx_df.columns[2], index, index, 0).values
-        splitting_matrices[purpose] = inner_dic    
+            inner_dic[ticketype] = pandas_utils.long_to_wide_infill(
+                mx_df, mx_df.columns[0], mx_df.columns[1], mx_df.columns[2], index, index, 0
+            ).values
+        splitting_matrices[purpose] = inner_dic
     return splitting_matrices
 
 
 def splits_loop(
     ticket_split_params: forecast_cnfg.TicketSplitParams,
     stations_lookup: pd.DataFrame,
-    tps: list = ["AM", "IP", "PM", "OP"]
+    tps: list = ["AM", "IP", "PM", "OP"],
 ):
     """
     Generates splitting ticket splitting factors for a given set of inputs.
@@ -224,17 +213,13 @@ def splits_loop(
     tps: Time periods. Defaults.
     """
     split_dict = {}
-    edge_flows = file_ops.read_df(
-        ticket_split_params.edge_flows_path, usecols=[0, 2, 5]
-    )
+    edge_flows = file_ops.read_df(ticket_split_params.edge_flows_path, usecols=[0, 2, 5])
     flows_lookup = file_ops.read_df(ticket_split_params.flow_cat_path)
     ticket_splits_df = file_ops.read_df(
         ticket_split_params.splits_path / "TicketTypeSplits.csv"
     )
     for tp in tps:
-        dist_mx = pd.read_csv(
-            ticket_split_params.splits_path / f"{tp}_stn2stn_costs.csv", usecols=[0, 1, 4]
-        )
+        dist_mx = pd.read_csv(ticket_split_params.splits_path / f"{tp}_stn2stn_costs.csv")
         splitting_matrices = produce_ticketype_splitting_matrices(
             edge_flows,
             stations_lookup,

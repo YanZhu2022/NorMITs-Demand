@@ -10,10 +10,11 @@ Formats matrices, including converting to numpy arrays, and infills missing grow
 import pandas as pd
 import numpy as np
 from caf.toolkit import pandas_utils
+
 # Local Imports
 # pylint: disable=import-error,wrong-import-position
 # Local imports here
-from normits_demand.models.forecasting.edge_growth import utils
+from normits_demand.models.forecasting.EDGE_growth import utils
 
 # pylint: enable=import-error,wrong-import-position
 
@@ -52,7 +53,10 @@ def prepare_growth_matrices(
     purposes = demand_segments_df["Purpose"].unique()
     ticket_types = factors_df["TicketType"].unique()
     factors_df = utils.merge_to_stations(
-        stations_lookup, factors_df, "ZoneCodeFrom", "ZoneCodeTo",
+        stations_lookup,
+        factors_df,
+        "ZoneCodeFrom",
+        "ZoneCodeTo",
     )
     # keep needed columns
     factors_df = factors_df[
@@ -73,17 +77,20 @@ def prepare_growth_matrices(
     # get growth matrices for each purpose/ticket type
     for purpose in purposes:
         for ticket_type in ticket_types:
-            mx_df = factors_df[
-                ["from_stn_zone_id", "to_stn_zone_id", "Demand"]
-            ].loc[
-                (factors_df["purpose"] == purpose)
-                & (factors_df["TicketType"] == ticket_type)
+            mx_df = factors_df[["from_stn_zone_id", "to_stn_zone_id", "Demand"]].loc[
+                (factors_df["purpose"] == purpose) & (factors_df["TicketType"] == ticket_type)
             ]
             # expand matrix
-            index = range(1, len(stations_lookup)+1)
-            growth_matrices[purpose][
-                ticket_type
-            ] = pandas_utils.long_to_wide_infill(mx_df, mx_df.columns[0], mx_df.columns[1], mx_df.columns[2], index, index, infill=0).values
+            index = range(1, len(stations_lookup) + 1)
+            growth_matrices[purpose][ticket_type] = pandas_utils.long_to_wide_infill(
+                mx_df,
+                mx_df.columns[0],
+                mx_df.columns[1],
+                mx_df.columns[2],
+                index,
+                index,
+                infill=0,
+            ).values
 
     return growth_matrices
 
@@ -109,7 +116,7 @@ def fill_missing_factors(
         list of journey purposes
     growth_matrices : dict
         numpy growth matrices for all journey purposes and ticket types
-        
+
     Returns
     -------
     filled_growth_matrices : dict

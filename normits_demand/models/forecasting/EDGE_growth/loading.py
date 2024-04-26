@@ -21,14 +21,15 @@ import pandas as pd
 
 # Local Imports
 # pylint: disable=import-error,wrong-import-position
-from normits_demand.models.forecasting import forecast_cnfg                                                              
+from normits_demand.models.forecasting import forecast_cnfg
 from normits_demand.utils import file_ops
-from normits_demand.models.forecasting.edge_growth import ticket_splits
+from normits_demand.models.forecasting.EDGE_growth import ticket_splits
 
 
 # pylint: enable=import-error,wrong-import-position
 
 # # # CONSTANTS # # #
+
 
 # # # CLASSES # # #
 @dataclasses.dataclass
@@ -47,6 +48,7 @@ class TPLoopOutput:
     factored: Dictionary of grown matrices. Keys are demand segments.
     summary: A summary dataframe with rows for each segment.
     """
+
 
 @dataclasses.dataclass
 class GlobalVars:
@@ -82,30 +84,32 @@ def load_globals(params: forecast_cnfg.EDGEParameters) -> GlobalVars:
     """
     demand_segments = file_ops.read_df(params.demand_segments)
     norms_segments = (
-        demand_segments.loc[demand_segments["ModelSegment"] == 1][
-            ["Segment"]
-        ]
+        demand_segments.loc[demand_segments["ModelSegment"] == 1][["Segment"]]
         .drop_duplicates()
         .values.tolist()
     )
     purposes = demand_segments["Purpose"].drop_duplicates().to_list()
-    norms_segments = [
-        segment for sublist in norms_segments for segment in sublist
-    ]
+    norms_segments = [segment for sublist in norms_segments for segment in sublist]
     # all segments
     all_segments = demand_segments["Segment"].to_list()
-    demand_segments["ToHome"] = demand_segments["ToHome"].astype(
-        bool
-    )
-    model_stations_tlcs = file_ops.read_df(
-        params.norms_to_edge_stns_path
-    )
+    demand_segments["ToHome"] = demand_segments["ToHome"].astype(bool)
+    model_stations_tlcs = file_ops.read_df(params.norms_to_edge_stns_path)
     ticket_type_splits = ticket_splits_logic(params.ticket_type_splits, model_stations_tlcs)
-    
 
-    return GlobalVars(demand_segments, purposes, norms_segments, all_segments, ticket_type_splits, model_stations_tlcs)
+    return GlobalVars(
+        demand_segments,
+        purposes,
+        norms_segments,
+        all_segments,
+        ticket_type_splits,
+        model_stations_tlcs,
+    )
 
-def ticket_splits_logic(ticket_type_splits: Union[forecast_cnfg.TicketSplitParams, Path], model_stations_tlcs: pd.DataFrame):
+
+def ticket_splits_logic(
+    ticket_type_splits: Union[forecast_cnfg.TicketSplitParams, Path],
+    model_stations_tlcs: pd.DataFrame,
+):
     """
     Logic for handling various ways of producing ticket type splits (ultimately either loading from a pickle file or generating)
     Parameters

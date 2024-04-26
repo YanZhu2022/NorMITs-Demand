@@ -18,6 +18,7 @@ from normits_demand.utils import general, file_ops
 ##### CONSTANTS #####
 LOG = nd_log.get_logger(__name__)
 
+
 ##### CLASSES #####
 class CUBEMatConverterError(general.NormitsDemandError):
     """Errors when converting to/from CUBE's .mat format."""

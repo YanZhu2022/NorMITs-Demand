@@ -7,6 +7,7 @@ import pathlib
 import re
 import subprocess
 import logging
+from typing import Optional
 
 # Third party imports
 import pandas as pd
@@ -21,14 +22,18 @@ from normits_demand.matrices import omx_file
 LOG = logging.getLogger(__name__)
 
 
-def omx_2_df(omx_mx: np.array) -> pd.DataFrame:
+def omx_2_df(
+    omx_mx: np.array,
+    tab_name: str,
+) -> pd.DataFrame:
     """Read omx to a pandas dataframe.
 
     Parameters
     ----------
     omx_mx : np.array
         omx single matrix.
-
+    tab_name: str
+        name given to the tab
     Function
     ----------
     function converts a cArray omx matrix to a pandas dataframe
@@ -39,14 +44,14 @@ def omx_2_df(omx_mx: np.array) -> pd.DataFrame:
         matrix dataframe.
     """
     # get omx array to pandas dataframe and reset productions
-    mx_df = pd.DataFrame(omx_mx).reset_index().rename(columns={"index": "from_model_zone_id"})
+    mx_df = pd.DataFrame(omx_mx).reset_index().rename(columns={"index": "from_stn_zone_id"})
     # melt DF to get attractions vector
     mx_df = mx_df.melt(
-        id_vars=["from_model_zone_id"], var_name="to_model_zone_id", value_name="Demand"
+        id_vars=["from_stn_zone_id"], var_name="to_stn_zone_id", value_name=tab_name
     )
     # adjust zone number
-    mx_df["from_model_zone_id"] = mx_df["from_model_zone_id"] + 1
-    mx_df["to_model_zone_id"] = mx_df["to_model_zone_id"] + 1
+    mx_df["from_stn_zone_id"] = mx_df["from_stn_zone_id"] + 1
+    mx_df["to_stn_zone_id"] = mx_df["to_stn_zone_id"] + 1
 
     return mx_df
 
@@ -130,7 +135,7 @@ def export_mat_2_csv_via_omx(
     in_mat: pathlib.Path,
     out_path: pathlib.Path,
     out_csv: str,
-    segment: str,
+    limited_tabs: Optional[list] = None,
 ) -> None:
     """Export Cube .MAT to .csv through .OMX.
 
@@ -144,30 +149,37 @@ def export_mat_2_csv_via_omx(
         path to the folder where outputs to be saved
     out_file: str
         name of the output file name
-    segment: str
-        segment of the overarching loop (e.g. purposes, periods, etc.)
+    limited_tabs: list
+        selected tabs from the matrix
     """
     # Export PT Demand
     c_m = CUBEMatConverter(cube_exe)
     c_m.mat_2_omx(in_mat, out_path, f"{out_csv}")
     # get omx levels
     with omx_file.OMXFile(pathlib.Path(out_path, f"{out_csv}.omx")) as omx_mat:
+
         for mx_lvl in omx_mat.matrix_levels:
+            if limited_tabs != None:
+                if mx_lvl not in limited_tabs:
+                    continue
             # move matrix level to a dataframe
-            mat = omx_2_df(omx_mat.get_matrix_level(mx_lvl))
+            mat = omx_2_df(omx_mat.get_matrix_level(mx_lvl), mx_lvl)
             # export matrix to csv
             file_ops.write_df(mat, f"{out_path}/{out_csv}_{mx_lvl}.csv", index=False)
 
     # delete .omx file
     # os.remove(f"{out_path}/{out_csv}.omx")
     # delete .MAT files
-    os.remove(f"{out_path}/PT_{segment}.MAT")
+    os.remove(f"{out_path}/{out_csv}.OMX")
+    os.remove(f"{in_mat.parent}/{out_csv}.MAT")
 
 
 def pt_demand_from_to(
     exe_cube: pathlib.Path,
     cat_folder: pathlib.Path,
     run_folder: pathlib.Path,
+    demand_version: int,
+    dimensions_version: int,
     output_folder: pathlib.Path,
 ) -> None:
     """Create PA From/To Home matrices.
@@ -180,26 +192,40 @@ def pt_demand_from_to(
         full path to the location of the NoRMS/NorTMS catalog.
     run_folder : Path
         full path top the folder containing the .mat input files.
+    demand_version : int
+        version of the demand matrix used
+    dimensions_version : int
+        version of dimensions used
     output_folder : Path
         full path top the folder where outputs to be saved.
     """
     # create file paths
-    area_sectors = cat_folder / "Params/Demand/Sector_Areas_Zones.MAT"
-    pt_24hr_demand = run_folder / "Inputs/Demand/PT_24hr_Demand.MAT"
+    area_sectors = (
+        cat_folder / f"ModelInputs/Dimensions/v{dimensions_version}/Sector_Areas_Zones.MAT"
+    )
+    pt_24hr_demand = run_folder / f"Inputs/Demand/v{demand_version}/PT_24hr_Demand.MAT"
 
-    splittingfactors_ds1 = run_folder / "Inputs/Demand/SplitFactors_DS1.MAT"
-    splittingfactors_ds2 = run_folder / "Inputs/Demand/SplitFactors_DS2.MAT"
-    splittingfactors_ds3 = run_folder / "Inputs/Demand/SplitFactors_DS3.MAT"
+    splittingfactors_ds1 = run_folder / f"Inputs/Demand/v{demand_version}/SplitFactors_DS1.MAT"
+    splittingfactors_ds2 = run_folder / f"Inputs/Demand/v{demand_version}/SplitFactors_DS2.MAT"
+    splittingfactors_ds3 = run_folder / f"Inputs/Demand/v{demand_version}/SplitFactors_DS3.MAT"
 
-    time_of_day_am = run_folder / "Inputs/Demand/Time_of_Day_Factors_Zonal_AM.MAT"
-    time_of_day_ip = run_folder / "Inputs/Demand/Time_of_Day_Factors_Zonal_IP.MAT"
-    time_of_day_pm = run_folder / "Inputs/Demand/Time_of_Day_Factors_Zonal_PM.MAT"
-    time_of_day_op = run_folder / "Inputs/Demand/Time_of_Day_Factors_Zonal_OP.MAT"
+    time_of_day_am = (
+        run_folder / f"Inputs/Demand/v{demand_version}/Time_of_Day_Factors_Zonal_AM.MAT"
+    )
+    time_of_day_ip = (
+        run_folder / f"Inputs/Demand/v{demand_version}/Time_of_Day_Factors_Zonal_IP.MAT"
+    )
+    time_of_day_pm = (
+        run_folder / f"Inputs/Demand/v{demand_version}/Time_of_Day_Factors_Zonal_PM.MAT"
+    )
+    time_of_day_op = (
+        run_folder / f"Inputs/Demand/v{demand_version}/Time_of_Day_Factors_Zonal_OP.MAT"
+    )
 
-    nhb_props_am = run_folder / "Inputs/Demand/OD_Prop_AM_PT.MAT"
-    nhb_props_ip = run_folder / "Inputs/Demand/OD_Prop_IP_PT.MAT"
-    nhb_props_pm = run_folder / "Inputs/Demand/OD_Prop_PM_PT.MAT"
-    nhb_props_op = run_folder / "Inputs/Demand/OD_Prop_OP_PT.MAT"
+    nhb_props_am = run_folder / f"Inputs/Demand/v{demand_version}/OD_Prop_AM_PT.MAT"
+    nhb_props_ip = run_folder / f"Inputs/Demand/v{demand_version}/OD_Prop_IP_PT.MAT"
+    nhb_props_pm = run_folder / f"Inputs/Demand/v{demand_version}/OD_Prop_PM_PT.MAT"
+    nhb_props_op = run_folder / f"Inputs/Demand/v{demand_version}/OD_Prop_OP_PT.MAT"
 
     # list of all files
     file_list = [
