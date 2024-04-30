@@ -24,5 +24,8 @@ edge_growth_dir: I:\NorMITs Demand\import\edge_replicant\edge_inputs\output_data
 # Forecast years dictionary
 # forecast year: EDGE growth factors file
 forecast_years:
+  2035: Out_Jan 24 Central - Growth_2035_rate.csv.bz2
   2036: Out_Jan 24 Central - Growth_2036_rate.csv.bz2
+  2042: Out_Jan 24 Central - Growth_2042_rate.csv.bz2
   2043: Out_Jan 24 Central - Growth_2043_rate.csv.bz2
+  2044: Out_Jan 24 Central - Growth_2044_rate.csv.bz2
