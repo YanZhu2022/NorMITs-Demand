@@ -19,10 +19,10 @@ ticket_type_splits:
 cube_exe: C:\Program Files\Citilabs\CubeVoyager\VOYAGER.EXE
 
 # EDGE outputs
-edge_growth_dir: I:\NorMITs Demand\import\edge_replicant\edge_inputs\output_data\Outputs\Apr 23 Reg
+edge_growth_dir: I:\NorMITs Demand\import\edge_replicant\edge_inputs\output_data\Outputs\Jan 24 Central - Growth exclude cars
 
 # Forecast years dictionary
 # forecast year: EDGE growth factors file
 forecast_years:
-  2028: Out_Apr 23 Reg_2028_rate.csv.bz2
-  2043: Out_Apr 23 Reg_2043_rate.csv.bz2
+  2036: Out_Jan 24 Central - Growth_2036_rate.csv.bz2
+  2043: Out_Jan 24 Central - Growth_2043_rate.csv.bz2
