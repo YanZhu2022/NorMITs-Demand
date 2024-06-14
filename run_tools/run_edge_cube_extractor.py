@@ -26,10 +26,10 @@ from normits_demand.matrices.cube_mat_converter import CUBEMatConverter
 CUBE_EXE = Path(r"C:\Program Files\Citilabs\CubeVoyager\VOYAGER.EXE")
 CUBE_CAT_PATH = Path(r"C:\GitHub\NorTMS")
 CAT_RUN_DIR = "Scenarios/Base"
-CUBE_RUN_ID = "OGK_2018"
-NETWORK_VERSION = 63
-DEMAND_VERSION = 10
-DIMENSION_VERSION = 3
+CUBE_RUN_ID = "OIQ_2018"
+NETWORK_VERSION = 72
+DEMAND_VERSION = 45
+DIMENSION_VERSION = 4
 # process parts
 # EXPORT_MATRICES to export NoRMS base matrices into CSVs
 # EXPORT_TLC to NoRMS <-> MOIRA TLCs Lookup
@@ -41,7 +41,7 @@ TLC_OVERWRITE_PATH = Path(r"U:\00_Inputs\GATInputs\TLC_Overwrite_MOIRA.csv")
 TICKET_SPLITS_PATH = Path(r"U:\00_Inputs\GATInputs\TicketTypeSplits.csv")
 
 # Output location
-OUT_PATH = Path(r"C:\Work\NoRMS\temp\normits")
+OUT_PATH = Path(r"C:\Work\NoRMS\NorMITs_Demand\Out")
 
 # ## CONSTANTS ## #
 # logger

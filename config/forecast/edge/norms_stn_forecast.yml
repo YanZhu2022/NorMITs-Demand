@@ -1,18 +1,18 @@
 iteration: 1.review
 forecast_scenario: Regional
-export_folder: C:\Work\NoRMS\temp\normits
+export_folder: C:\Work\NoRMS\NorMITs_Demand\Out
 assignment_model: NoRMS
 
 # Input paths
-matrices_to_grow_dir: C:\Work\NoRMS\temp\normits
-irsj_props_dir: C:\Work\NoRMS\temp\normits
+matrices_to_grow_dir: C:\Work\NoRMS\NorMITs_Demand\Out
+irsj_props_dir: C:\Work\NoRMS\NorMITs_Demand\Out
 
 # Custom inputs files
 demand_segments: U:\00_Inputs\GATInputs\demand_segments.csv
-norms_to_edge_stns_path: C:\Work\NoRMS\temp\normits\TLCs.csv
+norms_to_edge_stns_path: C:\Work\NoRMS\NorMITs_Demand\Out\TLCs.csv
 ticket_type_splits:
   edge_flows_path: U:\00_Inputs\GATInputs\FC_fullfat1819_NEW_DDG.csv
-  splits_path: C:\Work\NoRMS\temp\normits\split_dir
+  splits_path: C:\Work\NoRMS\NorMITs_Demand\Out\split_dir
   flow_cat_path: U:\00_Inputs\GATInputs\FlowCats.csv
   info: info
 
@@ -26,3 +26,4 @@ edge_growth_dir: I:\NorMITs Demand\import\edge_replicant\edge_inputs\output_data
 forecast_years:
   2036: Out_Jan 24 Central - Growth_2036_rate.csv.bz2
   2043: Out_Jan 24 Central - Growth_2043_rate.csv.bz2
+  2045: Out_Jan 24 Central - Growth_2045_rate.csv.bz2
