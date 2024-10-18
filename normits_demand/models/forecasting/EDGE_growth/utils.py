@@ -161,6 +161,7 @@ def convert_csv_2_mat(
     cube_exe: pathlib.Path,
     fcast_year: int,
     output_folder: pathlib.Path,
+    zones: int = 1300,
 ) -> None:
     """Convert CSV output matrices to Cube .MAT.
     Function converts output CSV matrices into a single Cube .MAT matrix
@@ -176,6 +177,8 @@ def convert_csv_2_mat(
     output_folder : Path
         path to folder where CSV matrices are saved. this is where the .MAT
         will also be saved to
+    zones: int
+        number of zones
     """
     # empty dictionary
     mats_dict = {}
@@ -186,7 +189,7 @@ def convert_csv_2_mat(
     # call CUBE convertor class
     c_m = CUBEMatConverter(cube_exe)
     c_m.csv_to_mat(
-        1300,
+        zones,
         mats_dict,
         pathlib.Path(output_folder, f"PT_24hr_Demand_{fcast_year}.MAT"),
         1,
